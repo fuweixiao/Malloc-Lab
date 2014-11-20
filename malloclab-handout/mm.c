@@ -114,17 +114,35 @@ void *mm_realloc(void *ptr, size_t size)
 {
     void *oldptr = ptr;
     void *newptr;
-    size_t copySize;
-    
-    newptr = mm_malloc(size);
-    if (newptr == NULL)
-      return NULL;
-    copySize = *(size_t *)((char *)oldptr - SIZE_T_SIZE);
-    if (size < copySize)
-      copySize = size;
-    memcpy(newptr, oldptr, copySize);
-    mm_free(oldptr);
-    return newptr;
+	if(ptr == NULL) {
+		if (size == 0)
+			return NULL;
+		else {
+		return mm_malloc(size);
+		}
+	}
+	if(size == 0 && ptr != NULL) {
+		mm_free(ptr);
+		return NULL;
+	}
+	int oldsize = SIZE(ptr);
+	int newsize = round_up(ALIGN(size + SIZE_T_SIZE));
+	//int diff;
+	if( oldsize == newsize) {
+		return ptr;
+	}
+	if( oldsize > newsize) {
+		//diff = oldsize - newsize;
+		return ptr;
+	}
+	if( oldsize < newsize) {
+		newptr = mm_malloc(newsize);
+		int copySize = oldsize; 
+		memcpy(newptr, oldptr, copySize);
+		mm_free(oldptr);
+		return newptr;
+	}
+    return NULL;
 }
 
 int get_index(int size)
