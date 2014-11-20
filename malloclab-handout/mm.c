@@ -44,12 +44,21 @@ team_t team = {
 
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
+#define SIZE(ptr) *(unsigned int*)((char*)ptr - SIZE_T_SIZE)
+
+#define FREELIST_SIZE 20
+static list_item freelist[FREELIST_SIZE];
 /* 
  * mm_init - initialize the malloc package.
  */
 int mm_init(void)
 {
-    return 0;
+	int i;
+	for( i = 0; i < FREELIST_SIZE; i++) {	
+		freelist[i].next = &freelist[i];
+		freelist[i].prev = &freelist[i];
+	}
+	return 0;
 }
 
 /* 
@@ -58,14 +67,27 @@ int mm_init(void)
  */
 void *mm_malloc(size_t size)
 {
+	// get size of the block
     int newsize = ALIGN(size + SIZE_T_SIZE);
-    void *p = mem_sbrk(newsize);
-    if (p == (void *)-1)
-	return NULL;
-    else {
-        *(size_t *)p = size;
-        return (void *)((char *)p + SIZE_T_SIZE);
-    }
+	newsize = round_up(newsize);
+
+	// get index of the freelist
+	int index = get_index(newsize);
+
+	// search the freelist for fit
+	void *p = remove_from_head(&freelist[index]); 
+	if (p) {
+		return p;
+	}
+	else {
+		p = mem_sbrk(newsize);
+		if (p == (void *)-1)
+			return NULL;
+		else {
+			*(size_t *)p = newsize;
+			return (void *)((char *)p + SIZE_T_SIZE);
+		}
+	}
 }
 
 /*
@@ -73,6 +95,16 @@ void *mm_malloc(size_t size)
  */
 void mm_free(void *ptr)
 {
+	// get size of the block
+	unsigned int size = SIZE(ptr);
+
+	// get index of the freelist
+	int index = get_index(size);
+
+	// insert at the head of the freelist
+	insert_at_head(ptr,&freelist[index]);
+
+	return; 
 }
 
 /*
@@ -95,10 +127,45 @@ void *mm_realloc(void *ptr, size_t size)
     return newptr;
 }
 
+int get_index(int size)
+{
+	int ret = 0;
+	size >>= 3;
+	while(size != 1) {
+		size >>= 1;
+		ret++;
+	}
+	return ret;
+}
 
+int round_up(int v)
+{
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v++;
+	return v;
+}
+void insert_at_head(void* ptr, list_item* freelist)
+{
+	((list_item*)ptr)->prev = freelist;
+	((list_item*)ptr)->next = freelist->next;
+	freelist->next->prev = (list_item*)ptr;
+	freelist->next = (list_item*)ptr;
+	return;
+}
 
-
-
+void* remove_from_head(list_item* freelist) {
+	if(freelist->prev == freelist->next)
+		return NULL;
+	freelist->next->next->prev = freelist;
+	list_item* ret = freelist->next;
+	freelist->next = freelist->next->next;
+	return (void*)ret; 
+}
 
 
 
