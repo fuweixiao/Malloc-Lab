@@ -12,7 +12,7 @@
  * This is the default path where the driver will look for the
  * default tracefiles. You can override it at runtime with the -t flag.
  */
-#define TRACEDIR "/home/gty773/traces/"
+#define TRACEDIR "/home/smile/workspace/malloclab/malloclab-handout/traces/"
 
 /*
  * This is the list of default tracefiles in TRACEDIR that the driver
@@ -66,7 +66,7 @@
  * MAX_HEAP was maintained
  *
  */
-#define MAX_HEAP (20*(1<<20))  /* 20 MB */
+#define MAX_HEAP (40*(1<<20))  /* 20 MB */
 
 /*****************************************************************************
  * Set exactly one of these USE_xxx constants to "1" to select a timing method

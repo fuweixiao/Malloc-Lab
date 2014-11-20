@@ -32,6 +32,10 @@ void mem_init(void)
 
     mem_max_addr = mem_start_brk + MAX_HEAP;  /* max legal heap address */
     mem_brk = mem_start_brk;                  /* heap is empty initially */
+	printf("mem_max_addr: %p\n", mem_max_addr);
+	printf("mem_brk: %p\n", mem_brk);
+	printf("MAX_HEAP: %d\n", MAX_HEAP);
+
 }
 
 /* 
@@ -60,6 +64,8 @@ void *mem_sbrk(int incr)
     char *old_brk = mem_brk;
 
     if ( (incr < 0) || ((mem_brk + incr) > mem_max_addr)) {
+	printf("mem_max_addr: %p\n", mem_max_addr);
+	printf("mem_brk + incr: %p\n", mem_brk + incr);
 	errno = ENOMEM;
 	fprintf(stderr, "ERROR: mem_sbrk failed. Ran out of memory...\n");
 	return (void *)-1;
