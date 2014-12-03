@@ -32,10 +32,11 @@ void mem_init(void)
 
     mem_max_addr = mem_start_brk + MAX_HEAP;  /* max legal heap address */
     mem_brk = mem_start_brk;                  /* heap is empty initially */
+	/*
 	printf("mem_max_addr: %p\n", mem_max_addr);
 	printf("mem_brk: %p\n", mem_brk);
 	printf("MAX_HEAP: %d\n", MAX_HEAP);
-
+	*/
 }
 
 /* 

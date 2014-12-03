@@ -24,15 +24,7 @@ typedef struct {
  * Define functions
  *
  */
-typedef struct item {
-	struct item* prev;
-	struct item* next;
-}list_item;
 
-int get_index(int size);
-int round_up(int v);
-void insert_at_head(void* ptr, list_item* freelist);
-void* remove_from_head(list_item* freelist);
 extern team_t team;
 
 

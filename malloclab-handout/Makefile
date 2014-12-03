@@ -1,12 +1,12 @@
 #
 # Students' Makefile for the Malloc Lab
 #
-TEAM = bovik
+TEAM = Blue shit
 VERSION = 1
-HANDINDIR = /afs/cs.cmu.edu/academic/class/15213-f01/malloclab/handin
+HANDINDIR = blackboard
 
 CC = gcc
-CFLAGS = -g -Wall -O0 -m32
+CFLAGS = -Wall -Wno-unused-result -O2 -m32
 
 OBJS = mdriver.o mm.o memlib.o fsecs.o fcyc.o clock.o ftimer.o
 

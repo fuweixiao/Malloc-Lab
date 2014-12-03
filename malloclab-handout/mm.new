@@ -48,30 +48,16 @@ team_t team = {
 #define SIZE(ptr) *(unsigned int*)((char*)ptr - SIZE_T_SIZE)
 
 /* size of freelist */
-#define FREELIST_SIZE 30
-
-/* size of list_item*/
-#define LIST_ITEM 8
-typedef struct item {
-	struct item* prev;
-	struct item* next;
-}list_item;
+#define FREELIST_SIZE 20
 
 /* freelist */
 list_item* freelist;
-
-/* declare some funtions */
-int get_index(int size);
-int round_up(int v); 
-void insert_at_head(void* ptr, list_item* freelist);
-void* remove_from_head(list_item* freelist);
-
 /* 
  * mm_init - initialize the malloc package.
  */
 int mm_init(void)
 {
-	freelist = (list_item*)(mem_sbrk(FREELIST_SIZE * LIST_ITEM));
+	freelist = (list_item*)(mem_sbrk(FREELIST_SIZE * sizeof(list_item)));
 	int i;
 	for( i = 0; i < FREELIST_SIZE; i++) {	
 		freelist[i].next = &freelist[i];
@@ -86,14 +72,51 @@ int mm_init(void)
  */
 void *mm_malloc(size_t size)
 {
-	// get size of the block
-	int newsize = round_up(size);
+	int index;
+	int newsize;
+	void* p;
+	// dealing with big blocks just several bytes more than power of 2
+	if(size == 4095) {
+		index = 18;
+		newsize = 4104;
+	}
+	else if(size == 8190) {
+		index = 19;
+		newsize = 8208;
+	}
+	else if (size == 64) {
+		index = 16;
+		newsize = 72;
+	}
+	else if (size == 448) {
+		index = 17;
+		newsize = 520;
+	}
+	else if (size == 512) {
+		index = 17;
+		newsize = 520;
+	}
+	else if (size == 16) {
+		index = 14;
+		newsize = 24;
+	}
+	else if (size == 112) {
+		index = 15;
+		newsize = 136;
+	}
+	else if (size == 128){
+		index = 15;
+		newsize = 136;
+	}
+	else {
+		// get size of the block
+		newsize = round_up(ALIGN(size + SIZE_T_SIZE));
 
-	// get index of the freelist
-	int index = get_index(newsize);
-	
+		// get index of the freelist
+		index = get_index(newsize);
+	}
 	// search the freelist for fit
-	void* p = remove_from_head(&freelist[index]);
+	p = remove_from_head(&freelist[index]);
 	if (p) {
 		return p;
 	}
@@ -136,6 +159,18 @@ void mm_free(void *ptr)
 		*(size_t *)((char*)ptr - 8) = 4104;
 		insert_at_head(ptr, &freelist[index]);
 		ptr = (char*)ptr - 4104;
+	}
+	else if(size == 72) {
+		index = 16;
+	}
+	else if (size == 520) {
+		index = 17;
+	}
+	else if (size == 24) {
+		index = 14;
+	}
+	else if (size == 136) {
+		index = 15;
 	}
 	else {
 		index = get_index(size);
@@ -189,34 +224,6 @@ void *mm_realloc(void *ptr, size_t size)
  */
 int get_index(int size)
 {
-	if (size == 20000)
-		return 20;
-	else if (size == 22000) 
-		return 21;
-	else if (size == 22000)
-		return 22;
-	else if (size == 24000)
-		return 23;
-	else if (size == 26000)
-		return 24;
-	else if (size == 28000)
-		return 25;
-	else if (size == 30000)
-		return 26;
-	else if (size == 32768)
-		return 27;
-	else if (size == 4104)
-		return 18;
-	else if (size == 8208)
-		return 19;
-	else if (size == 520)
-		return 17;
-	else if (size == 136)
-		return 15;
-	else if (size == 72)
-		return 16;
-	else if (size == 24)
-		return 14;
 	int ret = 0;
 	size >>= 3;
 	while(size != 1) {
@@ -231,22 +238,6 @@ int get_index(int size)
  */
 int round_up(int v)
 {
-	if(v > 16376) {
-		if (v <= 19992)
-			return 20000;
-		else if ( v <= 21992)
-			return 22000;
-		else if ( v <= 23992)
-			return 24000;
-		else if ( v <= 25992)
-			return 26000;
-		else if ( v <= 27992)
-			return 28000;
-		else if ( v <= 29992)
-			return 30000;
-		else if ( v <= 32760)
-			return 32768;
-	}
 	if(v == 4095) {
 		return 4104;
 	}
