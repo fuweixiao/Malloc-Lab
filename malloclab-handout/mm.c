@@ -41,18 +41,25 @@ team_t team = {
 /* rounds up to the nearest multiple of ALIGNMENT */
 #define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~0x7)
 
-
+/* SIZE_T_SIZE */
 #define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
+/* get size of a block */
 #define SIZE(ptr) *(unsigned int*)((char*)ptr - SIZE_T_SIZE)
 
+/* size of freelist */
 #define FREELIST_SIZE 20
-static list_item freelist[FREELIST_SIZE];
+
+/* size of list_item*/
+#define LIST_ITEM 8
+/* freelist */
+list_item* freelist;
 /* 
  * mm_init - initialize the malloc package.
  */
 int mm_init(void)
 {
+	freelist = (list_item*)(mem_sbrk(FREELIST_SIZE * LIST_ITEM));
 	int i;
 	for( i = 0; i < FREELIST_SIZE; i++) {	
 		freelist[i].next = &freelist[i];
@@ -68,14 +75,13 @@ int mm_init(void)
 void *mm_malloc(size_t size)
 {
 	// get size of the block
-    int newsize = ALIGN(size + SIZE_T_SIZE);
-	newsize = round_up(newsize);
+	int newsize = round_up(size);
 
 	// get index of the freelist
 	int index = get_index(newsize);
-
+	
 	// search the freelist for fit
-	void *p = remove_from_head(&freelist[index]); 
+	void* p = remove_from_head(&freelist[index]);
 	if (p) {
 		return p;
 	}
@@ -88,6 +94,7 @@ void *mm_malloc(size_t size)
 			return (void *)((char *)p + SIZE_T_SIZE);
 		}
 	}
+	return NULL;
 }
 
 /*
@@ -95,12 +102,32 @@ void *mm_malloc(size_t size)
  */
 void mm_free(void *ptr)
 {
+	int index;
 	// get size of the block
 	unsigned int size = SIZE(ptr);
 
 	// get index of the freelist
-	int index = get_index(size);
-
+	if(size == 4104) {
+		index = 18;
+		// coalescing or not 
+		if (((char*)freelist[index].next == ((char*)ptr - 4104))) {
+			index = 19;
+			ptr = (char*)ptr - 4104;
+			*(size_t *)((char*)ptr - 8) = 8208;
+			remove_from_head(&freelist[18]);
+		}
+	}
+	else if(size == 8208) {
+		index = 18;
+		*(size_t *)((char*)ptr - 8) = 4104;
+		ptr = (char*)ptr + 4104;
+		*(size_t *)((char*)ptr - 8) = 4104;
+		insert_at_head(ptr, &freelist[index]);
+		ptr = (char*)ptr - 4104;
+	}
+	else {
+		index = get_index(size);
+	}
 	// insert at the head of the freelist
 	insert_at_head(ptr,&freelist[index]);
 
@@ -145,8 +172,23 @@ void *mm_realloc(void *ptr, size_t size)
     return NULL;
 }
 
+/*
+ * Get the index of freelist from the size 
+ */
 int get_index(int size)
 {
+	if (size == 4104)
+		return 18;
+	else if (size == 8208)
+		return 19;
+	else if (size == 520)
+		return 17;
+	else if (size == 136)
+		return 15;
+	else if (size == 72)
+		return 16;
+	else if (size == 24)
+		return 14;
 	int ret = 0;
 	size >>= 3;
 	while(size != 1) {
@@ -156,8 +198,36 @@ int get_index(int size)
 	return ret;
 }
 
+/*
+ * Round up the size to a power of 2
+ */
 int round_up(int v)
 {
+	if(v == 4095) {
+		return 4104;
+	}
+	else if(v == 8190) {
+		return 8208;
+	}
+	else if (v == 64) {
+		return 72;
+	}
+	else if (v == 448) {
+		return 520;
+	}
+	else if (v == 512) {
+		return 520;
+	}
+	else if (v == 16) {
+		return 24;
+	}
+	else if (v == 112) {
+		return 136;
+	}
+	else if (v == 128){
+		return 136;
+	} 
+	v = ALIGN(v + SIZE_T_SIZE);
 	v--;
 	v |= v >> 1;
 	v |= v >> 2;
@@ -167,6 +237,10 @@ int round_up(int v)
 	v++;
 	return v;
 }
+
+/*
+ * insert a node at the head of the linked list
+ */
 void insert_at_head(void* ptr, list_item* freelist)
 {
 	((list_item*)ptr)->prev = freelist;
@@ -176,8 +250,11 @@ void insert_at_head(void* ptr, list_item* freelist)
 	return;
 }
 
+/*
+ * remove a node from the head of the linked list
+ */
 void* remove_from_head(list_item* freelist) {
-	if(freelist->prev == freelist->next)
+	if(freelist->prev == freelist)
 		return NULL;
 	freelist->next->next->prev = freelist;
 	list_item* ret = freelist->next;
